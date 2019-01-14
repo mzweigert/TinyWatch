@@ -4,7 +4,7 @@
 #include "font6x8.h"
 #include "ssd1306xled.h"
 #include "ssd1306xled16x32.h"
-#include "TimeManager.h"
+#include "../Time/TimeManager.h"
 
 #define SEC_INTERVAL 1000
 

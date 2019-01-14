@@ -1,5 +1,5 @@
 #include <avr/sleep.h>
-#include "DisplayManager.h"
+#include "src/Display/DisplayManager.h"
 
 #define LEFT_BTN 1
 #define LEFT_BTN_STATE digitalRead(LEFT_BTN)

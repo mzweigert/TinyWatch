@@ -2,12 +2,13 @@
 #include "src/Display/DisplayManager.h"
 
 #define LEFT_BTN 1
-#define LEFT_BTN_STATE digitalRead(LEFT_BTN)
+#define LEFT_BTN_PRESSED digitalRead(LEFT_BTN) == HIGH
 
 #define RIGHT_BTN 4
-#define RIGHT_BTN_STATE digitalRead(RIGHT_BTN)
+#define RIGHT_BTN_PRESSED digitalRead(RIGHT_BTN) == HIGH
 
-#define NOTHING_PRESSED (LEFT_BTN_STATE == LOW && RIGHT_BTN_STATE == LOW)
+#define NOTHING_PRESSED (!LEFT_BTN_PRESSED && !RIGHT_BTN_PRESSED)
+#define IS_IDDLE_MODE mode == IDDLE
 
 #define PUSH_BTN_INTERVAL 1000
 
@@ -71,7 +72,7 @@ void changeMode(Mode newMode, unsigned long *millisToSet) {
 }
 
 bool checkIfAnyBtnPressedInFirstEntry() {
-  if (modeEntry && (LEFT_BTN_STATE == HIGH || RIGHT_BTN_STATE == HIGH)) {
+  if (modeEntry && (LEFT_BTN_PRESSED || RIGHT_BTN_PRESSED)) {
     return true;
   } else {
     modeEntry = false;
@@ -85,12 +86,12 @@ void drawOled() {
     displayManager.printTime();
 
     if (checkIfAnyBtnPressedInFirstEntry()) return;
-    mode = IDDLE;
 
     bool canFireAction = currentMillis - previousMillisBtn >= PUSH_BTN_INTERVAL;
-    if (LEFT_BTN_STATE == HIGH && canFireAction) {
+    if (LEFT_BTN_PRESSED && canFireAction) {
       changeMode(SET, &previousMillisBtn);
-    } else if (RIGHT_BTN_STATE == HIGH && canFireAction) {
+      actualChanged = HOUR;
+    } else if (RIGHT_BTN_PRESSED && canFireAction) {
       displayManager.clearScreen();
       changeMode(DEBUG, &previousMillisBtn);
     } else if (NOTHING_PRESSED) {
@@ -102,7 +103,7 @@ void drawOled() {
     if (checkIfAnyBtnPressedInFirstEntry()) return;
 
     currentMillis = millis();
-    if (LEFT_BTN_STATE == HIGH && RIGHT_BTN_STATE == HIGH) {
+    if (LEFT_BTN_PRESSED && RIGHT_BTN_PRESSED) {
       if (currentMillis - previousMillisBothBtns >= PUSH_BTN_INTERVAL) {
         changeMode(IDDLE, &previousMillisBothBtns);
         wdt_auto_tune();
@@ -115,8 +116,8 @@ void drawOled() {
       bothBtnsPressed = true;
       return;
 
-    } else if (LEFT_BTN_STATE == HIGH || RIGHT_BTN_STATE == HIGH) {
-      ChangeType change = LEFT_BTN_STATE == HIGH ? DECRASE : INCRASE;
+    } else if (LEFT_BTN_PRESSED || RIGHT_BTN_PRESSED) {
+      ChangeType change = LEFT_BTN_PRESSED ? DECRASE : INCRASE;
       handleButtonInSetMode(change);
       previousMillis = currentMillis;
       displayManager.showActualChangedTimeUnit = false;
@@ -135,7 +136,7 @@ void drawOled() {
 
     if (checkIfAnyBtnPressedInFirstEntry()) return;
 
-    if (LEFT_BTN_STATE == HIGH) {
+    if (LEFT_BTN_PRESSED) {
       displayManager.clearScreen();
       changeMode(IDDLE, &previousMillisBtn);
       setDisplayTimeout();
@@ -146,7 +147,7 @@ void drawOled() {
 void loop() {
 
   if (sleeping) {
-    if (RIGHT_BTN_STATE == HIGH) {
+    if (RIGHT_BTN_PRESSED) {
       sleeping = false;
       displayManager.init();
       setDisplayTimeout();
@@ -155,10 +156,8 @@ void loop() {
     }
   } else {
 
-    bool canDisplayOff = millis() > display_timeout && mode == IDDLE
-                         && LEFT_BTN_STATE == LOW && RIGHT_BTN_STATE == LOW;
+    bool canDisplayOff = millis() > display_timeout && IS_IDDLE_MODE && NOTHING_PRESSED;
     if (canDisplayOff) {
-
       displayManager.sleep();
       sleeping = true;
       modeEntry = true;

@@ -13,8 +13,6 @@ enum TimeUnit {
   SEC,
 };
 
-
-
 class TimeManager {
 
   private:
@@ -34,17 +32,35 @@ class TimeManager {
       }
     }
 
+    void changeInternal(TimeUnit unit, void (TimeManager::*changeMethod)(int*, byte)) {
+      byte maxRange = unit == HOUR ? 23 : 59;
+      int val;
+      if (unit == HOUR) {
+        val = hour();
+        (this->*changeMethod)(&val, maxRange);
+        setTime(val, minute(), second());
+      } else if (unit == MIN) {
+        val = minute();
+        (this->*changeMethod)(&val, maxRange);
+        setTime(hour(), val, second());
+      } else if (unit == SEC) {
+        val = second();
+        (this->*changeMethod)(&val, maxRange);
+        setTime(hour(), minute(), val);
+      }
+    }
+
   public:
 
-  TimeUnit nextUnitToChange(TimeUnit current) {
-  if (current == HOUR) {
-    return MIN;
-  } else if (current == MIN) {
-    return SEC;
-  } else {
-    return HOUR;
-  }
-}
+    TimeUnit nextUnitToChange(TimeUnit current) {
+      if (current == HOUR) {
+        return MIN;
+      } else if (current == MIN) {
+        return SEC;
+      } else {
+        return HOUR;
+      }
+    }
 
     char* toString() {
       char *time = new char[9];
@@ -68,45 +84,9 @@ class TimeManager {
 
     void change(TimeUnit unit, ChangeType type) {
       if (type == INCRASE) {
-        increment(unit);
+        changeInternal(unit, &TimeManager::incrementVal);
       } else {
-        decrement(unit);
-      }
-    }
-
-    void increment(TimeUnit unit) {
-      byte maxRange = unit == HOUR ? 23 : 59;
-      int val;
-      if (unit == HOUR) {
-        val = hour();
-        incrementVal(&val, maxRange);
-        setTime(val, minute(), second());
-      } else if (unit == MIN) {
-        val = minute();
-        incrementVal(&val, maxRange);
-        setTime(hour(), val, second());
-      } else if (unit == SEC) {
-        val = second();
-        incrementVal(&val, maxRange);
-        setTime(hour(), minute(), val);
-      }
-    }
-
-    void decrement(TimeUnit unit) {
-      byte maxRange = unit == HOUR ? 23 : 59;
-      int val;
-      if (unit == HOUR) {
-        val = hour();
-        decrementVal(&val, maxRange);
-        setTime(val, minute(), second());
-      } else if (unit == MIN) {
-        val = minute();
-        decrementVal(&val, maxRange);
-        setTime(hour(), val, second());
-      } else if (unit == SEC) {
-        val = second();
-        decrementVal(&val, maxRange);
-        setTime(hour(), minute(), val);
+        changeInternal(unit, &TimeManager::decrementVal);
       }
     }
 
